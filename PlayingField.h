@@ -9,6 +9,7 @@ private:
 	int field[4][4];
 	int moveField[4][4];
 	int assocField[4][4];
+	int score = 0;
 public:
 	PlayingField();
 
@@ -22,13 +23,14 @@ public:
 	void moveS();
 	bool tryD();
 	void moveD();
-	
+
 	//перенос поля
 	void getField(int(&matrix)[4][4]); //взять поле плиток после перемещения
-	void getMoveField(int (&matrix)[4][4]); //взять поле, отображающее на сколько ->
+	void getMoveField(int(&matrix)[4][4]); //взять поле, отображающее на сколько ->
 	//-> плиток в выбранном направлении сдвинулась плитка стоящаяя на этом месте
 
 	//бесполезная фигня
+	int getScore();
 	void Plus2();
 	int getNumDig();
 	bool find2048();
