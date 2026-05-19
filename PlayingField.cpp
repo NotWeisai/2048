@@ -29,6 +29,7 @@ bool PlayingField::move(char let) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			moveField[i][j] = 0;
+			assocField[i][j] = 0;
 		}
 	}
 	if (let == 'w' && tryW()) {
@@ -114,9 +115,10 @@ void PlayingField::moveS() {
 					field[i + counter][j] = field[i][j];
 					field[i][j] = 0;
 				}
-				else if (field[i + counter + 1][j] == field[i][j]) {
+				else if (field[i + counter + 1][j] == field[i][j] && assocField[i + counter + 1][j] == 0) {
 					moveField[i][j] = counter + 1;
 					field[i + counter + 1][j] = field[i][j] * 2;
+					assocField[i + counter + 1][j] = 1;
 					field[i][j] = 0;
 				}
 				else {
@@ -156,9 +158,10 @@ void PlayingField::moveW() {
 					field[i - counter][j] = field[i][j];
 					field[i][j] = 0;
 				}
-				else if (field[i - counter - 1][j] == field[i][j]) {
+				else if (field[i - counter - 1][j] == field[i][j] && assocField[i - counter - 1][j] == 0) {
 					moveField[i][j] = counter + 1;
 					field[i - counter - 1][j] = field[i][j] * 2;
+					assocField[i - counter - 1][j] = 1;
 					field[i][j] = 0;
 				}
 				else {
@@ -198,9 +201,10 @@ void PlayingField::moveD() {
 					field[i][j + counter] = field[i][j];
 					field[i][j] = 0;
 				}
-				else if (field[i][j + counter + 1] == field[i][j]) {
+				else if (field[i][j + counter + 1] == field[i][j] && assocField[i][j + counter + 1] == 0) {
 					moveField[i][j] = counter + 1;
 					field[i][j + counter + 1] = field[i][j] * 2;
+					assocField[i][j + counter + 1] = 1;
 					field[i][j] = 0;
 				}
 				else {
@@ -240,9 +244,10 @@ void PlayingField::moveA() {
 					field[i][j - counter] = field[i][j];
 					field[i][j] = 0;
 				}
-				else if (field[i][j - counter - 1] == field[i][j]) {
+				else if (field[i][j - counter - 1] == field[i][j] && assocField[i][j - counter - 1] == 0) {
 					moveField[i][j] = counter + 1;
 					field[i][j - counter - 1] = field[i][j] * 2;
+					assocField[i][j - counter - 1] = 1;
 					field[i][j] = 0;
 				}
 				else {
