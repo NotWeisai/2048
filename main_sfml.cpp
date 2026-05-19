@@ -140,7 +140,7 @@ private:
         isAnimating = true;
         animProgress = 0.f;
         isSpawning = false;
-        spawnProgress = 0.f;
+        spawnProgress = 0.f; 
 
         if (!cont) {
             if (pf.find2048()) won = true;
@@ -228,12 +228,6 @@ private:
     void render() {
         window.clear(sf::Color(250, 248, 239));
 
-        // ТЕСТ: если увидишь красный квадрат — отрисовка работает
-        /*sf::RectangleShape test({ 80, 80 });
-        test.setPosition(50, 50);
-        test.setFillColor(sf::Color::Red);
-        window.draw(test);*/
-
         // === ЗАГОЛОВОК ===
         sf::Text title("2048", font, 68);
         title.setFillColor({ 119, 110, 101 });
@@ -246,6 +240,7 @@ private:
         float ts = getTileSize();
         float pad = getPadding();
         auto offset = getGridOffset();
+        sf::Color emptyCellColor(205, 193, 180);
 
         sf::RectangleShape gridBg({ 4 * (ts + pad) - pad + 4, 4 * (ts + pad) - pad + 4 });  
         gridBg.setPosition(offset.x - 1, offset.y - 1);
@@ -269,61 +264,88 @@ private:
         }
 
         // === ПЛИТКИ ===
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                float bx = offset.x + j * (ts + pad);
-                float by = offset.y + i * (ts + pad);
+        if (isAnimating) {
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j) {
+                    if (oldField[i][j] > 0) {
+                        int delta = moveField[i][j];
+                        float progress = std::min(animProgress / ANIM_DURATION, 1.f);
 
-                int val = field[i][j];
-                sf::Vector2f pos = { bx, by };
+                        float dRow = (lastDir == 's' ? 1.f : lastDir == 'w' ? -1.f : 0.f);
+                        float dCol = (lastDir == 'd' ? 1.f : lastDir == 'a' ? -1.f : 0.f);
 
-                if (isAnimating && oldField[i][j] > 0) {
-                    int d = moveField[i][j];
-                    float p = std::min(animProgress / ANIM_DURATION, 1.f);
-                    float dr = (lastDir == 's' ? 1.f : lastDir == 'w' ? -1.f : 0.f);
-                    float dc = (lastDir == 'd' ? 1.f : lastDir == 'a' ? -1.f : 0.f);
-                    float lr = i + dr * d * p;
-                    float lc = j + dc * d * p;
-                    pos = { offset.x + lc * (ts + pad), offset.y + lr * (ts + pad) };
-                    val = oldField[i][j];
+                        float lerpedRow = i + dRow * delta * progress;
+                        float lerpedCol = j + dCol * delta * progress;
+
+                        sf::Vector2f Position = { offset.x + lerpedCol * (ts + pad), offset.y + lerpedRow * (ts + pad) };
+                        int animVal = oldField[i][j];
+
+                        sf::RectangleShape tile({ ts, ts });
+                        tile.setPosition(Position);
+                        tile.setFillColor(getTileColor(animVal));
+                        tile.setOutlineThickness(4.f);
+                        tile.setOutlineColor({ 187, 173, 160 });
+                        window.draw(tile);
+
+                        if (animVal > 0) {
+                            sf::Text txt(std::to_string(animVal), font, getFontSize(animVal));
+                            txt.setFillColor(getTextColor(animVal));
+                            auto b = txt.getLocalBounds();
+                            txt.setPosition(Position.x + (ts - b.width) / 2.f - b.left,
+                                Position.y + (ts - b.height) / 2.f - b.top);
+                            window.draw(txt);
+                        }
+                    }
                 }
+            }
+        }
+        else {
+            // Обычная отрисовка финального поля (когда анимация не идёт)
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j) {
+                    int val = field[i][j];
+                    if (val == 0) continue;
 
-                if (val == 0 && !(isSpawning && i == newTileRow && j == newTileCol)) continue;
+                    // Пропускаем новую плитку, если она сейчас спавнится (чтобы не было наложения)
+                    if (isSpawning && i == newTileRow && j == newTileCol) continue;
 
-                sf::RectangleShape tile({ ts, ts });
-                tile.setPosition(pos);
-                tile.setFillColor(getTileColor(val));
-                tile.setOutlineThickness(4.f);
-                tile.setOutlineColor({ 187, 173, 160 });
-                window.draw(tile);
+                    float x = offset.x + j * (ts + pad);
+                    float y = offset.y + i * (ts + pad);
 
-                if (val > 0) {
-                    sf::Text txt(std::to_string(val), font, getFontSize(val));
-                    txt.setFillColor(getTextColor(val));
-                    auto b = txt.getLocalBounds();
-                    txt.setPosition(pos.x + (ts - b.width) / 2.f - b.left,
-                        pos.y + (ts - b.height) / 2.f - b.top);
-                    window.draw(txt);
+                    sf::RectangleShape tile({ ts, ts });
+                    tile.setPosition(x, y);
+                    tile.setFillColor(getTileColor(val));
+                    tile.setOutlineColor({ 187, 173, 160 });
+                    tile.setOutlineThickness(4.f);
+                    window.draw(tile);
+
+                    sf::Text stxt(std::to_string(val), font, getFontSize(val));
+                    stxt.setFillColor(getTextColor(val));
+                    sf::FloatRect tb = stxt.getLocalBounds();
+                    stxt.setPosition(x + (ts - tb.width) / 2.f - tb.left,
+                        y + (ts - tb.height) / 2.f - tb.top);
+                    window.draw(stxt);
                 }
             }
         }
 
+
         // === НОВАЯ ПЛИТКА (spawn) ===
         if ((isSpawning || (!isAnimating && newTileRow != -1)) && newTileRow >= 0) {
-            float p = isSpawning ? (spawnProgress / SPAWN_DURATION) : 1.f;
-            float sc = 0.3f + 0.7f * std::sin(p * 1.57f);
-            float ts2 = ts * sc;
+            float progress = isSpawning ? (spawnProgress / SPAWN_DURATION) : 1.f;
+            float scale = 0.25f + 0.75f * std::sin(progress * 3.14159f * 0.5f); // более приятный
+            float ts2 = ts * scale;
             float px = offset.x + newTileCol * (ts + pad) + (ts - ts2) / 2.f;
             float py = offset.y + newTileRow * (ts + pad) + (ts - ts2) / 2.f;
 
-            sf::RectangleShape st({ ts2, ts2 });
-            st.setPosition(px, py);
-            st.setFillColor(getTileColor(2));
-            st.setOutlineThickness(4.f * sc);
-            st.setOutlineColor({ 187, 173, 160 });
-            window.draw(st);
+            sf::RectangleShape spawnTile({ ts2, ts2 });
+            spawnTile.setPosition(px, py);
+            spawnTile.setFillColor(getTileColor(2));
+            spawnTile.setOutlineThickness(4.f * scale);
+            spawnTile.setOutlineColor({ 187, 173, 160 });
+            window.draw(spawnTile);
 
-            sf::Text stxt("2", font, static_cast<int>(getFontSize(2) * sc));
+            sf::Text stxt("2", font, static_cast<int>(getFontSize(2) * scale));
             stxt.setFillColor(getTextColor(2));
             auto b = stxt.getLocalBounds();
             stxt.setPosition(px + (ts2 - b.width) / 2.f - b.left, py + (ts2 - b.height) / 2.f - b.top);
